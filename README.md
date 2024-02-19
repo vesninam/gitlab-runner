@@ -86,10 +86,28 @@ newgrp docker
 2) В качестве платформы для выполнения выбираем ```docker``` 
 3) Образ выбираем по вашему смотрению В качестве примера будет использован ubuntu 
 
-![runnre registered](https://i.ibb.co/xfZShc6/ksnip-20240219-151125.png)
+![runner registered](https://i.ibb.co/xfZShc6/ksnip-20240219-151125.png)
+
+
+Теперь необходимо добавить автоматически созданного пользователя gitlab-runner в группу docker. Для этого воспользуемся командой 
+
+```sudo usermod -aG docker gitlab-runner```
+
+После этого необходимо добавить gitlab-runner в sudoers.
+Для этого необходимо прописать выполнить следующее  
+
+```sudo nano  /etc/sudoers```
+
+![alt text](https://i.ibb.co/rtfgRdG/ksnip-20240219-222659.png)
+
+
+После этого открываем файл ```~/.gitlab-runner/config.toml``` и указываем путь к ```docker.sock``` в ```volumes```
+
+![img](https://i.ibb.co/S7jbDmx/ksnip-20240219-182128.png)
 
 
 Создадим новый screen, введём команду  ```gitlab-runner run``` и деаттачимся от него (скрина)
+
 
 После этого должен появиться в списке раннеров.
 
@@ -143,3 +161,75 @@ demo - сама стадия, использующая настройки из .
 Если откроем pipeline, то увидим следующее  
 
 ![started2](https://i.ibb.co/yXJvKmL/ksnip-20240219-151206.png)
+
+#### Использование GitLab CI и Docker Compose для поднятия рабочего окружения 
+
+При помощи GitLab CI и Docker Compose на сервере можно поднять всю необходимое для работы проекта инфраструктуру.  В качестве примера рассмотрим такие сервисы как PostgreSQL и Dozzle.
+
+
+Создадим новый проект, назовём его ```project-infra```
+
+По аналогии с предыдущим пунктом, создадим файл ```.gitlab-ci.yml```
+
+И напишем в нем следуюее 
+
+```
+stages:
+  - deploy-infra
+
+variables:
+  HOST_SOURCES: /opt/sources
+
+deploy-infra:
+  image:  "docker/compose:1.25.1"
+  stage: deploy-infra
+  script:
+    # останавливаем контейнеры
+    - docker-compose stop
+
+    # удаляем старую копию файлов и копируем новую
+    - rm -rf $HOST_SOURCES/*
+    - cp -r $CI_PROJECT_DIR/* $HOST_SOURCES
+
+    # запускаем контейнеры
+    - docker-compose up -d
+
+  when: manual # Запуск действия проводится вручную
+  tags:
+    - demo-runner-usage
+```
+В данном .gitlab-ci.yml описывается основное поведение: мы останавливаем контейнеры, отвечающие за инфраструктуру, очищаем и перезаписываем файлы, потом при помощи команды ```docker-compose up -d``` поднимаем нужные сервисы. Сервисы описываются в файле ```.docker-compose.yml``` Его содержимое для данного проекта приведено ниже 
+
+```
+version: '2.4'
+services:
+  postgres:
+    container_name: postgres
+    image: 'postgres:latest'
+    environment:
+      POSTGRES_USER: db-user
+      POSTGRES_PASSWORD: db-password
+    ports:
+      - '5432:5432'
+    volumes:
+      - 'db-data:/var/lib/postgresql/data'
+    networks:
+      - projects-network
+  dozzle:
+    container_name: dozzle
+    image: 'amir20/dozzle:latest'
+    ports:
+      - '8888:8080' # Проброс портов
+    networks:
+      - projects-network
+networks:
+  projects-network:
+    driver: bridge
+    external: true
+
+volumes:
+  db-data: null
+```
+В docker-compose.yml описываются сервисы, названия их docker-образов, проводится проброс портов, указываются переменные окружения. Также можно заметить указание network - сети, которую используют контейнеры. Чтобы контейнеры "видели" друг друга, они должны находиться в рамках одной сети. В нашем случае, это ```projects-network```
+
+Если всё было настроено правильно, в pipeline будет выведено следующее 
