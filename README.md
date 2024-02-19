@@ -41,3 +41,105 @@ newgrp docker
 Ожидаемый результат: 
 
 ![result](https://i.ibb.co/PQ0NW6g/ksnip-20240219-135142.png)
+
+### Установка GitLab Runner 
+
+#### Загрузка и установка раннера 
+
+***Добавьте apt-репозиторий для GitLab Runner***
+
+```curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash```
+
+
+Установите gitlab-runner командой 
+
+```sudo dpkg -i gitlab-runner_amd64.deb```
+
+#### Настройка раннера 
+
+Для большего удобства работы с проектами, сделаем раннер групповым. Создадим группу 
+
+![group creation](https://i.ibb.co/QXtrwL7/ksnip-20240219-151050.png)
+
+Теперь перейдём в Build -> Runners 
+
+![runners section](https://i.ibb.co/J2cNbzh/ksnip-20240219-151055.png)
+
+
+Нажимаем Create Group Runner 
+
+![create runner button](https://i.ibb.co/pyfK9Vf/ksnip-20240219-151059.png)
+
+
+Вносим необходимую информацию: операционную систему, тег (или теги), по которому мы будем отличать данный раннер, описание и максимальное время выполнение работы. 
+
+![info os](https://i.ibb.co/ZNfyYbN/ksnip-20240219-151107.png)
+
+![info another](https://i.ibb.co/r6br1sR/ksnip-20240219-151110.png)
+
+
+Раннер создан. Теперь его нужно зарегистрировать. Переходим к терминалу и вводим скопированный код.
+
+![codeinfo](https://i.ibb.co/ngcBWW2/ksnip-20240219-151114.png)
+
+1) Платформу и имя раннера оставляем как есть. 
+2) В качестве платформы для выполнения выбираем ```docker``` 
+3) Образ выбираем по вашему смотрению В качестве примера будет использован ubuntu 
+
+![runnre registered](https://i.ibb.co/xfZShc6/ksnip-20240219-151125.png)
+
+
+Создадим новый screen, введём команду  ```gitlab-runner run``` и деаттачимся от него (скрина)
+
+После этого должен появиться в списке раннеров.
+
+
+![isee](https://i.ibb.co/hyDhHjS/ksnip-20240219-151129.png) 
+
+
+
+### Использование раннера 
+
+#### Тестовый проект. 
+
+Создадим пустой проект в группе, к которой привязан раннер. В нем созданим файл ```.gitlab-ci.yml``` (сделать это можно либо вручную, либо нажатием соответствующей кнопки )
+
+![ci creation](https://i.ibb.co/x8p2q5y/ksnip-20240219-151133.png)
+
+Напишем внутри следующее: 
+
+```
+stages:
+    - demo
+.demo:
+    stage: demo
+    tags:
+        - demo-runner-usage 
+    image: "maven:3.8.3-openjdk-17"
+
+demo:
+    extends: .demo
+    script:
+        - echo "Hello World!"
+```
+
+Этот скрипт создает одну единственную стадию demo, во время которой просто выведется строка "Hello World"  
+
+В .demo мы указали такие параметры как 
+
+1) Название стадии, к которой будет применен код .demo
+2) Тег раннера, который мы используем 
+3) Образ Docker, который будет использоваться во время запуска. В качестве примера был взят образ maven:3.8.3-openjdk-17 (если не указывать, то будет применен стандартный) 
+
+demo - сама стадия, использующая настройки из .demo и выводящая "Hello World" 
+
+Если всё было настроено верно, то pipeline начнет выполнятся
+
+
+![started](https://i.ibb.co/R63S6br/ksnip-20240219-151141.png)
+
+![started1](https://i.ibb.co/wdqyRgJ/ksnip-20240219-151144.png)
+
+Если откроем pipeline, то увидим следующее  
+
+![started2](https://i.ibb.co/yXJvKmL/ksnip-20240219-151206.png)
