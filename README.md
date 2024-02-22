@@ -239,3 +239,67 @@ volumes:
 А при вводе команды ```docker container ls``` на стороне сервера, мы заметим новые контейнеры. 
 
 ![alt img](https://i.ibb.co/Zf28vFQ/ksnip-20240219-182155.png)
+
+#### Использование GitLab Runner для деплоя, а также запуска Unit- и E2E-тестов 
+
+##### Запуск Unit-тестов при помощи GitLab Runner (PyTest)
+
+Создадим подгруппу под наш проект, назовём её ```super-backend-app``` . В ней создадим два проекта ```backend-app``` и ```e2e-tests```
+
+![alt text](https://i.ibb.co/7VRRjZ7/ksnip-20240222-102118.png)
+
+Сделаем для backend-app простенькое приложение на Python с использованием фреймворка FastAPI. Там будет всего два файла: ```server.py``` со следующим содержимим 
+
+```
+from fastapi import FastAPI
+
+app = FastAPI()
+
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
+
+```
+
+И ```test_main.py``` в директории test. Содержимое файла представлено ниже 
+
+```
+def test_first():
+    assert 2 + 2 == 4
+
+
+def test_second():
+    assert "A" != "B"
+
+```
+
+***Не забываем про файл*** ```requirements.txt``` !
+
+Создадим файл ```.gitlab-ci.yml```
+
+И напишем в нем следующее 
+
+```
+stages:
+    - test
+
+run-tests:
+    image: python:3.9
+    stage: test
+    tags:
+        - demo-runner-usage 
+    before_script:
+        - pip install -r requirements.txt
+    script:
+        - pytest .
+
+```
+
+В yml файле мы указали образ докера который будет использоваться (в нашем случае это python 3.9), тег используемого раннера, команды, которые надо выполнить перед основным скриптом (у нас это установка зависимостей из requirements.txt), а также команду на запуск тестов в основном скрипте. 
+
+
+
+
+
+
