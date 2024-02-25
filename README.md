@@ -1,10 +1,15 @@
-## GitLab Runner и с чем его едят. 
+## GitLab Runner. 
+
+![alt text](https://i.ibb.co/MN0k8CS/jtwqwgm4eemxyqz8lcd3.jpg)
 
 ### Что такое GitLab Runner?
 
 GitLab Runner - это компонент GitLab, который обеспечивает автоматизацию процесса сборки, тестирования и развертывания программного кода. Этот инструмент позволяет запускать задачи CI/CD (Continuous Integration/Continuous Deployment) на удаленных машинах или в контейнерах.
 
+
 ### Какие возможности он предоставляет? 
+
+![alt text](https://i.ibb.co/zRtfyfC/1-0-Ltf-O6-HTqdy-ZDX7p-YPu-WA.webp)
 
 1) ***Управление тестированием:***
       - Запуск тестов одним кликом, включая как unit, так и e2e тестирование.
