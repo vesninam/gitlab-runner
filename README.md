@@ -159,9 +159,21 @@ newgrp docker
 ![alt text](https://i.ibb.co/rtfgRdG/ksnip-20240219-222659.png)
 
 
+Теперь создадим сеть для Docker (разрабатываемые микросервисы будут находиться в этой сети)
+
+```
+ docker network create -d bridge projects-network
+```
+
+
 После этого открываем файл ```~/.gitlab-runner/config.toml``` и указываем путь к ```docker.sock``` в ```volumes```
 
 ![img](https://i.ibb.co/S7jbDmx/ksnip-20240219-182128.png)
+
+
+После этого укажем network, который будет использовать docker executor. Добавим в ```[runners.docker]``` строку ``` network_mode = "projects-network"```
+
+![img](https://i.ibb.co/tp5Tt2X/ksnip-20240226-172521.png)
 
 
 Создадим новый screen, введём команду  ```gitlab-runner run``` и деаттачимся от него (скрина)
@@ -460,6 +472,36 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"] #Коман
 
 ##### Запуск E2E-Тестов.
 
-Coming soon...
+Процесс запуска e2e-тесто не имеет больших отличий от запуска unit-тестов. Создадим новый проект, назовем его ```e2e-tests```. В проекте создадим директорию test, там создадим файл ```test_e2e.py```. Содержимое файла приведено ниже: 
+
+```
+import requests
+
+def test_e2e_demo():
+    url = "http://backend-app:80/"
+    result = requests.get(url=url).json()
+    assert result is not None
+    assert result["message"] == "OK"
+```
+
+***Примечание***: вместо IP адреса мы указываем имя контейнера. Так как запуск тестов происходит внутри docker-контейрера, если мы укажем просто адрес, то обращение произойдет внутри контейнера.
+
+Содержимое ```.gitlab-ci.yml``` приведено ниже: 
+
+```
+stages:
+    - test
+
+test_e2e:
+    image: python:3.9
+    stage: test
+    tags:
+        - demo-runner-usage
+    before_script:
+        - pip install pytest requests
+    script:
+        - pytest .
+    when: manual
+```
 
 
