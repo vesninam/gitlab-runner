@@ -111,7 +111,7 @@ newgrp docker
 
 Установите gitlab-runner командой 
 
-```sudo dpkg -i gitlab-runner_amd64.deb```
+```sudo apt install gitlab-runner```
 
 #### Настройка раннера 
 
@@ -504,4 +504,48 @@ test_e2e:
     when: manual
 ```
 
+Если всё настроено правильно, то увидим следующий результат 
+
+
+![alt text](https://i.ibb.co/0BMz6CV/ksnip-20240226-190707.png)
+
+
+##### Получение артефактов работы выполнения на примере html отчета coverage 
+
+GitLab CI предоставляет возможности получения результатов работы пайплайна. 
+
+Создадим этап run-unit-tests-with-coverage в группе test. Код для .gitlab-ci.yml приведен ниже 
+
+```
+run-unit-tests-with-coverage:
+    image: python:3.9
+    stage: test
+    artifacts:
+        paths:
+            - htmlcov
+    tags:
+        - demo-runner-usage 
+    before_script:
+        - pip install -r requirements.txt
+    script:
+        - python -m coverage run -m unittest && python -m coverage report && python -m coverage html 
+    when: manual
+```
+***Примечание***: не забудьте добавить pytest и coverage в requirements.txt
+
+При запуске увидим следующее 
+
+![alt text](https://i.ibb.co/2qsVY7g/ksnip-20240226-190954.png)
+
+Также заметны изменения на боковой панели. 
+
+![alt text](https://i.ibb.co/YcVGjwx/ksnip-20240226-191011.png)
+
+Мы можем либо скачать полученный арифакт 
+
+![alt text](https://i.ibb.co/m5GsQhY/ksnip-20240226-191205.png)
+
+Либо посмотреть содержимое в браузере 
+
+![alt text](https://i.ibb.co/ky5YWtr/ksnip-20240226-191303.png)
 
