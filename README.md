@@ -316,7 +316,7 @@ app = FastAPI()
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "OK"}
 
 ```
 
@@ -389,8 +389,77 @@ def test_broken():
 
 
 
-##### Деплой проекта при помощи GitlabCI  
+##### Деплой проекта при помощи Gitlab CI  
 
-Перед проведением E2E-тестов проект нужно заделоить. Модифицируем созданный ```.gitlab-ci.yml```
+Тесты прошли, значит можно развёртывать приложение на удаленном сервере. Для деплоя будем использовать настроенный ранее раннер. 
 
-TODO: написать эту секцию. 
+Создадим новый этап в ```.gitlab-ci.yml```, этап ```deploy```
+
+```
+deploy:
+    stage: deploy
+    tags:
+        - demo-runner-usage
+    image: docker/compose:1.25.1
+    script:
+        - docker stop backend-app || true
+        - docker rm backend-app || true
+        - docker-compose stop
+        - docker-compose up -d --build  
+        - docker container ls
+```
+
+Теперь нам нужно описать развертываемый сервис в ```docker-compose.yml```
+
+```
+version: "3.7"
+services:
+  backend-app:
+    container_name: backend-app
+    networks: 
+      - projects-network
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
+    restart: "no"
+
+networks:
+  projects-network:
+    driver: bridge
+    external: true
+
+```
+
+Остановимся на структуре директорий провекта. Сам main файл (как и остальной код) находятся в директории app.  
+
+![alt text](https://transfer.sh/FAkGbe4B9W/ksnip_20240226-155744.png)
+
+
+
+После этого нам нужно описать запуск проекта в Docekrfile. Создадим его и укажем следующее 
+
+```
+FROM python:3.10.5-alpine #Образ, который мы будем использовать
+WORKDIR /code #Название рабочей директории 
+COPY ./app/requirements.txt  /code/requirements.txt #Копируем файл requirements.txt во внутрь контейнера
+COPY ./app /code/app #Копируем директорию с проектов в контейнер
+RUN pip install -r /code/requirements.txt #Установка зависимостей
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"] #Команда для запуска 
+```
+
+Запускаем этап deploy. Если всё настроено правильно, то увидим следующий результат: 
+
+![img](https://i.ibb.co/5T5hmTX/ksnip-20240226-160140.png)
+
+Появился новый контейнер ```backend-app```. Теперь проверим, правильно ли произошло развертывание. Отправим GET-запрос на адрес машины. Если всё получилось, увидим следующий результат
+
+![alt text](https://i.ibb.co/v3B2QsL/ksnip-20240226-160549.png)
+
+
+##### Запуск E2E-Тестов.
+
+Coming soon...
+
+
